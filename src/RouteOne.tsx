@@ -1,31 +1,47 @@
-import { graphql, useLazyLoadQuery } from "react-relay";
+import {
+  PreloadedQuery,
+  graphql,
+  loadQuery,
+  usePreloadedQuery,
+} from "react-relay";
 import {
   useNavigate,
+  useLoaderData,
+  LoaderFunctionArgs,
 } from "react-router-dom";
 import { RouteOneQuery as RouteOneQueryType } from "./__generated__/RouteOneQuery.graphql";
 import AppChrome from "./AppChrome";
+import { RelayEnvironment } from "./RelayEnvironment";
+import ShipList from "./ShipList";
+import { Suspense } from "react";
 
 const RouteOneQuery = graphql`
-  query RouteOneQuery {
-    allStarships(first: 10) {
-      edges {
-         node {
-           name
-         }
-      }
-    }
+  query RouteOneQuery($amount: Int) {
+    ...ShipListFragment
   }
 `;
+
+export function loader({ request }: LoaderFunctionArgs) {
+  const url = new URL(request.url);
+  const amount = parseInt(url.searchParams.get("amount") || "5", 10);
+  return loadQuery(RelayEnvironment, RouteOneQuery, { amount });
+}
 
 export default function RouteOne() {
   const navigate = useNavigate();
 
-  const data = useLazyLoadQuery<RouteOneQueryType>(RouteOneQuery, {});
+  const queryReference = useLoaderData() as PreloadedQuery<RouteOneQueryType>;
+  const data = usePreloadedQuery<RouteOneQueryType>(
+    RouteOneQuery,
+    queryReference,
+  );
 
   return (
     <AppChrome>
       <h2>Route one</h2>
-      <ul>{data.allStarships?.edges?.map(edge => <li>{edge?.node?.name}</li>)}</ul>
+      <Suspense fallback={<p>Loading ships...</p>}>
+        <ShipList root={data} />
+      </Suspense>
       <button
         type="button"
         onClick={() => {

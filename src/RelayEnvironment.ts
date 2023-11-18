@@ -8,6 +8,10 @@ import {
 
 const HTTP_ENDPOINT = "https://swapi-graphql.netlify.app/.netlify/functions/index";
 
+function sleep(duration: number) {
+  return new Promise(resolve => setTimeout(resolve, duration));
+}
+
 const fetchFn: FetchFunction = async (request, variables) => {
   const resp = await fetch(HTTP_ENDPOINT, {
     method: "POST",
@@ -22,6 +26,8 @@ const fetchFn: FetchFunction = async (request, variables) => {
       variables,
     }),
   });
+
+  await sleep(3000);
 
   return await resp.json();
 };
